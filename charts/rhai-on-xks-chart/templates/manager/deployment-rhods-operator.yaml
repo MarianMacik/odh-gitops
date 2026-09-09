@@ -42,6 +42,7 @@ spec:
         - args:
             - --health-probe-bind-address=:8081
             - --metrics-bind-address=0.0.0.0:8080
+            - --metrics-secure=false
             - --leader-elect
           command:
             - /manager
@@ -60,7 +61,7 @@ spec:
               value: "true"
             - name: RHAI_DISABLE_KUEUE_COMPONENT
               value: "true"
-            - name: RHAI_DISABLE_LLAMASTACKOPERATOR_COMPONENT
+            - name: RHAI_DISABLE_OGX_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_MLFLOWOPERATOR_COMPONENT
               value: "true"
@@ -68,15 +69,11 @@ spec:
               value: "true"
             - name: RHAI_DISABLE_MODELREGISTRY_COMPONENT
               value: "true"
-            - name: RHAI_DISABLE_MODELSASSERVICE_COMPONENT
-              value: "true"
             - name: RHAI_DISABLE_RAY_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_SPARKOPERATOR_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_TRAINER_COMPONENT
-              value: "true"
-            - name: RHAI_DISABLE_TRAININGOPERATOR_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_TRUSTYAI_COMPONENT
               value: "true"
@@ -87,7 +84,7 @@ spec:
             - name: RHAI_DISABLE_CERTCONFIGMAPGENERATOR_SERVICE
               value: "true"
             - name: RHAI_DISABLE_GATEWAY_SERVICE
-              value: "true"
+              value: "false"
             - name: RHAI_DISABLE_MONITORING_SERVICE
               value: "true"
             - name: RHAI_DISABLE_SETUPCONTROLLER_SERVICE
@@ -114,6 +111,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: DEFAULT_MANIFESTS_PATH
               value: /opt/manifests
+            - name: DEFAULT_CHARTS_PATH
+              value: /opt/charts
             {{- range $item := .Values.rhaiOperator.relatedImages }}
             - name: {{ $item.name | quote }}
               value: {{ $item.value | quote }}

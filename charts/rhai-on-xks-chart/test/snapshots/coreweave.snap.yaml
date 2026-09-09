@@ -102,15 +102,14 @@ spec:
                           description: Configuration for the cert-manager operator.
                           type: object
                         managementPolicy:
-                          default: Managed
-                          description: |-
-                            ManagementPolicy determines whether the operator manages this dependency.
-                            Managed: the operator installs and reconciles the dependency.
-                            Unmanaged: the operator does not manage the dependency; the user is responsible.
+                          description: ManagementPolicy determines whether the operator manages this dependency.
                           enum:
                             - Managed
                             - Unmanaged
                           type: string
+                          x-kubernetes-validations:
+                            - message: cert-manager managementPolicy cannot be set to Managed
+                              rule: self != 'Managed' || self == oldSelf
                       type: object
                     gatewayAPI:
                       description: GatewayAPI defines the Gateway API dependency.
@@ -256,200 +255,6 @@ spec:
           x-kubernetes-validations:
             - message: CoreWeaveKubernetesEngine name must be default-coreweavekubernetesengine
               rule: self.metadata.name == 'default-coreweavekubernetesengine'
-      served: true
-      storage: true
-      subresources:
-        status: {}
----
-# Source: rhai-on-xks-chart/templates/crds/customresourcedefinition-kserves.components.platform.opendatahub.io.yaml
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
-    helm.sh/resource-policy: keep
-  name: kserves.components.platform.opendatahub.io
-spec:
-  group: components.platform.opendatahub.io
-  names:
-    kind: Kserve
-    listKind: KserveList
-    plural: kserves
-    singular: kserve
-  scope: Cluster
-  versions:
-    - additionalPrinterColumns:
-        - description: Ready
-          jsonPath: .status.conditions[?(@.type=="Ready")].status
-          name: Ready
-          type: string
-        - description: Reason
-          jsonPath: .status.conditions[?(@.type=="Ready")].reason
-          name: Reason
-          type: string
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: Kserve is the Schema for the kserves API
-          properties:
-            apiVersion:
-              description: |-
-                APIVersion defines the versioned schema of this representation of an object.
-                Servers should convert recognized schemas to the latest internal value, and
-                may reject unrecognized values.
-                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-              type: string
-            kind:
-              description: |-
-                Kind is a string value representing the REST resource this object represents.
-                Servers may infer this from the endpoint the client submits requests to.
-                Cannot be updated.
-                In CamelCase.
-                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: KserveSpec defines the desired state of Kserve
-              properties:
-                modelsAsService:
-                  description: Configures and enables Models as a Service integration
-                  properties:
-                    managementState:
-                      default: Removed
-                      enum:
-                        - Managed
-                        - Removed
-                      pattern: ^(Managed|Unmanaged|Force|Removed)$
-                      type: string
-                  type: object
-                nim:
-                  description: Configures and enables NVIDIA NIM integration
-                  properties:
-                    airGapped:
-                      default: false
-                      description: |-
-                        When true, NIM integration assumes an air-gapped cluster. External API calls
-                        and the NIM model list ConfigMap creation are skipped, while status conditions
-                        are marked successful with an air-gapped message.
-                      type: boolean
-                    managementState:
-                      default: Managed
-                      enum:
-                        - Managed
-                        - Removed
-                      pattern: ^(Managed|Unmanaged|Force|Removed)$
-                      type: string
-                  type: object
-                rawDeploymentServiceConfig:
-                  default: Headless
-                  description: |-
-                    Configures the type of service that is created for InferenceServices using RawDeployment.
-                    The values for RawDeploymentServiceConfig can be "Headless" (default value) or "Headed".
-                    Headless: to set "ServiceClusterIPNone = true" in the 'inferenceservice-config' configmap for Kserve.
-                    Headed: to set "ServiceClusterIPNone = false" in the 'inferenceservice-config' configmap for Kserve.
-                  enum:
-                    - Headless
-                    - Headed
-                  type: string
-                wva:
-                  description: Configures and enables workload-variant-autoscaler (WVA) integration
-                  properties:
-                    managementState:
-                      default: Removed
-                      enum:
-                        - Managed
-                        - Removed
-                      pattern: ^(Managed|Unmanaged|Force|Removed)$
-                      type: string
-                  type: object
-              type: object
-            status:
-              description: KserveStatus defines the observed state of Kserve
-              properties:
-                conditions:
-                  items:
-                    properties:
-                      lastHeartbeatTime:
-                        description: |-
-                          The last time we got an update on a given condition, this should not be set and is
-                          present only for backward compatibility reasons
-                        format: date-time
-                        type: string
-                      lastTransitionTime:
-                        description: |-
-                          lastTransitionTime is the last time the condition transitioned from one status to another.
-                          This should be when the underlying condition changed.
-                          If that is not known, then using the time when the API field changed is acceptable.
-                        format: date-time
-                        type: string
-                      message:
-                        description: message is a human-readable message indicating details about the transition.
-                        type: string
-                      observedGeneration:
-                        description: |-
-                          observedGeneration represents the .metadata.generation that the condition was set based upon.
-                          For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration
-                          is 9, the condition is out of date with respect to the current state of the instance.
-                        format: int64
-                        minimum: 0
-                        type: integer
-                      reason:
-                        description: |-
-                          reason contains a programmatic identifier indicating the reason for the condition's last transition.
-                          The value should be a CamelCase string.
-                        type: string
-                      severity:
-                        description: |-
-                          Severity with which to treat failures of this type of condition.
-                          When this is not specified, it defaults to Error.
-                        type: string
-                      status:
-                        description: status of the condition, one of True, False, Unknown.
-                        enum:
-                          - "True"
-                          - "False"
-                          - Unknown
-                        type: string
-                      type:
-                        description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                        maxLength: 316
-                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
-                        type: string
-                    required:
-                      - status
-                      - type
-                    type: object
-                  type: array
-                  x-kubernetes-list-type: atomic
-                observedGeneration:
-                  description: The generation observed by the resource controller.
-                  format: int64
-                  type: integer
-                phase:
-                  type: string
-                releases:
-                  items:
-                    description: ComponentRelease represents the detailed status of a component release.
-                    properties:
-                      name:
-                        type: string
-                      repoUrl:
-                        type: string
-                      version:
-                        type: string
-                    required:
-                      - name
-                    type: object
-                  type: array
-                  x-kubernetes-list-map-keys:
-                    - name
-                  x-kubernetes-list-type: map
-              type: object
-          type: object
-          x-kubernetes-validations:
-            - message: Kserve name must be default-kserve
-              rule: self.metadata.name == 'default-kserve'
       served: true
       storage: true
       subresources:
@@ -609,24 +414,7 @@ rules:
   - apiGroups:
       - rbac.authorization.k8s.io
     resourceNames:
-      - cert-manager-operator-controller-manager-clusterrole
-      - cert-manager-operator-metrics-reader
-    resources:
-      - clusterroles
-    verbs:
-      - bind
-      - delete
-      - escalate
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - rbac.authorization.k8s.io
-    resourceNames:
       - metrics-reader
-      - servicemesh-operator3-clusterrole
     resources:
       - clusterroles
     verbs:
@@ -655,18 +443,11 @@ rules:
       - watch
   - apiGroups:
       - rbac.authorization.k8s.io
-    resources:
-      - roles
-    verbs:
-      - create
-      - list
-      - watch
-  - apiGroups:
-      - rbac.authorization.k8s.io
     resourceNames:
-      - cert-manager-operator-controller-manager-role
+      - servicemesh-operator3-clusterrole
+      - servicemeshoperator3-metrics-reader
     resources:
-      - roles
+      - clusterroles
     verbs:
       - bind
       - delete
@@ -675,6 +456,14 @@ rules:
       - list
       - patch
       - update
+      - watch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - roles
+    verbs:
+      - create
+      - list
       - watch
   - apiGroups:
       - rbac.authorization.k8s.io
@@ -740,7 +529,6 @@ rules:
       - ""
     resources:
       - clusterversions
-      - nodes
       - rhmis
     verbs:
       - get
@@ -795,6 +583,16 @@ rules:
       - namespaces/finalizers
     verbs:
       - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
       - get
       - list
       - patch
@@ -878,6 +676,7 @@ rules:
   - apiGroups:
       - apps
     resources:
+      - daemonsets
       - deployments
       - deployments/finalizers
       - statefulsets
@@ -967,19 +766,17 @@ rules:
   - apiGroups:
       - build.openshift.io
     resources:
-      - buildconfigs/instantiate
       - builds
     verbs:
-      - create
       - delete
       - get
       - list
-      - patch
       - watch
   - apiGroups:
       - cert-manager.io
     resources:
       - certificates
+      - issuers
     verbs:
       - create
       - delete
@@ -989,12 +786,76 @@ rules:
       - update
       - watch
   - apiGroups:
-      - cert-manager.io
+      - components.platform.opendatahub.io
     resources:
-      - issuers
+      - aigateways
+      - aihubs
+      - dashboards
+      - datasciencepipelines
+      - feastoperators
+      - kserves
+      - kueues
+      - mcplifecycleoperators
+      - mlflowoperators
+      - modelmeshservings
+      - ogxs
+      - rays
+      - sparkoperators
+      - trainers
+      - trustyais
+      - workbenches
     verbs:
       - create
+      - delete
+      - get
+      - list
       - patch
+      - update
+      - watch
+  - apiGroups:
+      - components.platform.opendatahub.io
+    resources:
+      - aigateways/finalizers
+      - aihubs/finalizers
+      - dashboards/finalizers
+      - datasciencepipelines/finalizers
+      - feastoperators/finalizers
+      - kserves/finalizers
+      - kueues/finalizers
+      - mcplifecycleoperators/finalizers
+      - mlflowoperators/finalizers
+      - modelmeshservings/finalizers
+      - ogxs/finalizers
+      - rays/finalizers
+      - sparkoperators/finalizers
+      - trainers/finalizers
+      - trustyais/finalizers
+      - workbenches/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - components.platform.opendatahub.io
+    resources:
+      - aigateways/status
+      - aihubs/status
+      - dashboards/status
+      - datasciencepipelines/status
+      - feastoperators/status
+      - kserves/status
+      - kueues/status
+      - mcplifecycleoperators/status
+      - mlflowoperators/status
+      - modelmeshservings/status
+      - ogxs/status
+      - rays/status
+      - sparkoperators/status
+      - trainers/status
+      - trustyais/status
+      - workbenches/status
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - components.platform.opendatahub.io
     resources:
@@ -1010,25 +871,9 @@ rules:
     verbs:
       - get
   - apiGroups:
-      - components.platform.opendatahub.io
+      - config.opendatahub.io
     resources:
-      - dashboards
-      - datasciencepipelines
-      - feastoperators
-      - kserves
-      - kueues
-      - llamastackoperators
-      - mlflowoperators
-      - modelcontrollers
-      - modelmeshservings
-      - modelregistries
-      - modelsasservices
-      - rays
-      - sparkoperators
-      - trainers
-      - trainingoperators
-      - trustyais
-      - workbenches
+      - platforms
     verbs:
       - create
       - delete
@@ -1038,65 +883,23 @@ rules:
       - update
       - watch
   - apiGroups:
-      - components.platform.opendatahub.io
+      - config.opendatahub.io
     resources:
-      - dashboards/finalizers
+      - platforms/finalizers
     verbs:
-      - create
-      - get
-      - list
-      - patch
       - update
-      - use
-      - watch
   - apiGroups:
-      - components.platform.opendatahub.io
+      - config.opendatahub.io
     resources:
-      - dashboards/status
-      - datasciencepipelines/status
-      - feastoperators/status
-      - kserves/status
-      - kueues/status
-      - llamastackoperators/status
-      - mlflowoperators/status
-      - modelcontrollers/status
-      - modelmeshservings/status
-      - modelregistries/status
-      - modelsasservices/status
-      - rays/status
-      - sparkoperators/status
-      - trainers/status
-      - trainingoperators/status
-      - trustyais/status
-      - workbenches/status
+      - platforms/status
     verbs:
       - get
       - patch
-      - update
-  - apiGroups:
-      - components.platform.opendatahub.io
-    resources:
-      - datasciencepipelines/finalizers
-      - feastoperators/finalizers
-      - kserves/finalizers
-      - kueues/finalizers
-      - llamastackoperators/finalizers
-      - mlflowoperators/finalizers
-      - modelcontrollers/finalizers
-      - modelmeshservings/finalizers
-      - modelregistries/finalizers
-      - modelsasservices/finalizers
-      - rays/finalizers
-      - sparkoperators/finalizers
-      - trainers/finalizers
-      - trainingoperators/finalizers
-      - trustyais/finalizers
-      - workbenches/finalizers
-    verbs:
       - update
   - apiGroups:
       - config.openshift.io
     resources:
+      - apiservers
       - authentications
       - clusterversions
       - infrastructures
@@ -1114,7 +917,6 @@ rules:
       - console.openshift.io
     resources:
       - consolelinks
-      - odhquickstarts
     verbs:
       - create
       - delete
@@ -1148,24 +950,9 @@ rules:
       - dashboard.opendatahub.io
     resources:
       - acceleratorprofiles
-      - odhapplications
-      - odhdocuments
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - dashboard.opendatahub.io
-    resources:
-      - hardwareprofiles
     verbs:
       - get
       - list
-      - update
       - watch
   - apiGroups:
       - datasciencecluster.opendatahub.io
@@ -1235,7 +1022,6 @@ rules:
       - dscinitializations/finalizers
       - dscinitializations/status
     verbs:
-      - delete
       - get
       - patch
       - update
@@ -1273,18 +1059,6 @@ rules:
       - patch
       - watch
   - apiGroups:
-      - extensions.kuadrant.io
-    resources:
-      - telemetrypolicies
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
       - features.opendatahub.io
     resources:
       - featuretrackers
@@ -1300,16 +1074,8 @@ rules:
       - features.opendatahub.io
     resources:
       - featuretrackers/finalizers
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - features.opendatahub.io
-    resources:
       - featuretrackers/status
     verbs:
-      - delete
       - get
       - patch
       - update
@@ -1342,27 +1108,9 @@ rules:
   - apiGroups:
       - image.openshift.io
     resources:
-      - imagestreamtags
       - registry/metrics
     verbs:
       - get
-  - apiGroups:
-      - inference.networking.k8s.io
-    resources:
-      - inferencepools
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - inference.networking.x-k8s.io
-    resources:
-      - inferencemodels
-      - inferencepools
-    verbs:
-      - get
-      - list
-      - watch
   - apiGroups:
       - infrastructure.opendatahub.io
     resources:
@@ -1398,49 +1146,6 @@ rules:
       - get
       - list
       - patch
-      - watch
-  - apiGroups:
-      - keda.sh
-    resources:
-      - kedacontrollers
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - keda.sh
-    resources:
-      - triggerauthentications
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - kuadrant.io
-    resources:
-      - authpolicies
-      - ratelimitpolicies
-      - telemetrypolicies
-      - tokenratelimitpolicies
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - kuadrant.io
-    resources:
-      - kuadrants
-    verbs:
-      - get
-      - list
       - watch
   - apiGroups:
       - kubeflow.org
@@ -1514,59 +1219,6 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
-      - mlflow.opendatahub.io
-    resources:
-      - mlflows
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - mlflow.opendatahub.io
-    resources:
-      - mlflows/finalizers
-    verbs:
-      - update
-  - apiGroups:
-      - mlflow.opendatahub.io
-    resources:
-      - mlflows/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - modelregistry.opendatahub.io
-    resources:
-      - modelregistries
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - modelregistry.opendatahub.io
-    resources:
-      - modelregistries/finalizers
-    verbs:
-      - get
-      - update
-  - apiGroups:
-      - modelregistry.opendatahub.io
-    resources:
-      - modelregistries/status
-    verbs:
-      - get
-      - patch
-      - update
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -1691,12 +1343,8 @@ rules:
     resources:
       - odhdashboardconfigs
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - opentelemetry.io
@@ -1728,13 +1376,6 @@ rules:
       - patch
       - update
   - apiGroups:
-      - operator.authorino.kuadrant.io
-    resources:
-      - authorinos
-    verbs:
-      - get
-      - list
-  - apiGroups:
       - operator.openshift.io
     resources:
       - consoles
@@ -1749,7 +1390,6 @@ rules:
       - operator.openshift.io
     resources:
       - jobsetoperators
-      - leaderworkersetoperators
     verbs:
       - get
       - list
@@ -1900,36 +1540,11 @@ rules:
       - securitycontextconstraints
     verbs:
       - create
+      - delete
       - get
       - list
       - patch
-      - use
-      - watch
-  - apiGroups:
-      - security.openshift.io
-    resourceNames:
-      - anyuid
-    resources:
-      - securitycontextconstraints
-    verbs:
-      - create
-      - get
-      - list
-      - patch
-      - use
-      - watch
-  - apiGroups:
-      - security.openshift.io
-    resourceNames:
-      - restricted
-    resources:
-      - securitycontextconstraints
-    verbs:
-      - create
-      - get
-      - list
-      - patch
-      - use
+      - update
       - watch
   - apiGroups:
       - services.platform.opendatahub.io
@@ -1964,62 +1579,6 @@ rules:
       - patch
       - update
   - apiGroups:
-      - serving.kserve.io
-    resources:
-      - clusterservingruntimes
-      - clusterservingruntimes/finalizers
-      - clusterstoragecontainers
-      - clusterstoragecontainers/finalizers
-      - inferencegraphs
-      - inferenceservices
-      - inferenceservices/finalizers
-      - llminferenceserviceconfigs
-      - predictors
-      - servingruntimes
-      - servingruntimes/finalizers
-      - trainedmodels
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - serving.kserve.io
-    resources:
-      - clusterservingruntimes/status
-      - clusterstoragecontainers/status
-      - inferencegraphs/status
-      - inferenceservices/status
-      - predictors/status
-      - trainedmodels/status
-    verbs:
-      - delete
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - serving.kserve.io
-    resources:
-      - llminferenceserviceconfigs/status
-      - predictors/finalizers
-      - servingruntimes/status
-    verbs:
-      - get
-      - patch
-      - update
-  - apiGroups:
-      - serving.kserve.io
-    resources:
-      - llminferenceservices
-      - llminferenceservices/status
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
       - snapshot.storage.k8s.io
     resources:
       - volumesnapshots
@@ -2028,30 +1587,6 @@ rules:
       - delete
       - get
       - patch
-  - apiGroups:
-      - telemetry.istio.io
-    resources:
-      - telemetries
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - template.openshift.io
-    resources:
-      - templates
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
   - apiGroups:
       - tempo.grafana.com
     resources:
@@ -2178,9 +1713,9 @@ metadata:
 spec:
   ports:
     - name: http
-      port: 8443
+      port: 8080
       protocol: TCP
-      targetPort: http
+      targetPort: 8080
   selector:
     name: rhai-operator
 ---
@@ -2360,6 +1895,7 @@ spec:
         - args:
             - --health-probe-bind-address=:8081
             - --metrics-bind-address=0.0.0.0:8080
+            - --metrics-secure=false
             - --leader-elect
           command:
             - /manager
@@ -2378,7 +1914,7 @@ spec:
               value: "true"
             - name: RHAI_DISABLE_KUEUE_COMPONENT
               value: "true"
-            - name: RHAI_DISABLE_LLAMASTACKOPERATOR_COMPONENT
+            - name: RHAI_DISABLE_OGX_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_MLFLOWOPERATOR_COMPONENT
               value: "true"
@@ -2386,15 +1922,11 @@ spec:
               value: "true"
             - name: RHAI_DISABLE_MODELREGISTRY_COMPONENT
               value: "true"
-            - name: RHAI_DISABLE_MODELSASSERVICE_COMPONENT
-              value: "true"
             - name: RHAI_DISABLE_RAY_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_SPARKOPERATOR_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_TRAINER_COMPONENT
-              value: "true"
-            - name: RHAI_DISABLE_TRAININGOPERATOR_COMPONENT
               value: "true"
             - name: RHAI_DISABLE_TRUSTYAI_COMPONENT
               value: "true"
@@ -2405,7 +1937,7 @@ spec:
             - name: RHAI_DISABLE_CERTCONFIGMAPGENERATOR_SERVICE
               value: "true"
             - name: RHAI_DISABLE_GATEWAY_SERVICE
-              value: "true"
+              value: "false"
             - name: RHAI_DISABLE_MONITORING_SERVICE
               value: "true"
             - name: RHAI_DISABLE_SETUPCONTROLLER_SERVICE
@@ -2432,6 +1964,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: DEFAULT_MANIFESTS_PATH
               value: /opt/manifests
+            - name: DEFAULT_CHARTS_PATH
+              value: /opt/charts
           image: quay.io/opendatahub/opendatahub-operator:latest
           imagePullPolicy: Always
           livenessProbe:
@@ -2518,57 +2052,6 @@ spec:
             medium: Memory
             sizeLimit: 10Mi
           name: tmp
----
-# Source: rhai-on-xks-chart/templates/webhooks/mutatingwebhookconfiguration-rhai-operator-mutating-webhook-configuration.yaml
-apiVersion: admissionregistration.k8s.io/v1
-kind: MutatingWebhookConfiguration
-metadata:
-  annotations:
-    cert-manager.io/inject-ca-from: redhat-ods-operator/rhai-operator-webhook-cert
-  name: rhai-operator-mutating-webhook-configuration
-  namespace: redhat-ods-operator
-webhooks:
-  - admissionReviewVersions:
-      - v1
-    clientConfig:
-      service:
-        name: rhai-operator-webhook-service
-        namespace: redhat-ods-operator
-        path: /platform-connection-isvc
-    failurePolicy: Fail
-    name: connection-isvc.opendatahub.io
-    rules:
-      - apiGroups:
-          - serving.kserve.io
-        apiVersions:
-          - v1beta1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - inferenceservices
-    sideEffects: NoneOnDryRun
-  - admissionReviewVersions:
-      - v1
-    clientConfig:
-      service:
-        name: rhai-operator-webhook-service
-        namespace: redhat-ods-operator
-        path: /platform-connection-llmisvc
-    failurePolicy: Fail
-    name: connection-llmisvc.opendatahub.io
-    rules:
-      - apiGroups:
-          - serving.kserve.io
-        apiVersions:
-          - v1alpha1
-          - v1alpha2
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - llminferenceservices
-    sideEffects: NoneOnDryRun
 ---
 # Source: rhai-on-xks-chart/templates/hooks/post-install-crs-rbac.yaml
 apiVersion: v1
